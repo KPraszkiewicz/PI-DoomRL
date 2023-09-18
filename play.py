@@ -7,6 +7,7 @@ log_dir = "log_basic_PPO_1/"
 
 env_args = {
     'scenario': "basic",
+    'visible': True,
     'frame_skip': 1,
     'frame_processor': lambda frame: cv2.resize(
         frame, None, fx=.5, fy=.5, interpolation=cv2.INTER_AREA)
