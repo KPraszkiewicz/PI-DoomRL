@@ -5,7 +5,7 @@ import shutil
 import os
 import sys
 
-from stable_baselines3 import PPO
+from stable_baselines3 import PPO, DQN
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.env_util import make_vec_env
 
@@ -33,7 +33,25 @@ PPO_parameters = {
     'clip_range_vf': None
 }
 
-log_dir = f"log_{scenario}_{algorithm}_test"
+DQN_parameters = {
+    'learning_rate': config.getfloat('DQN', 'learning_rate'),
+    'policy': config.get('DQN', 'policy'),
+    'buffer_size': config.getint('DQN', 'buffer_size'),
+    'learning_starts': config.getint('DQN', 'learning_starts'),
+    'batch_size': config.getint('DQN', 'batch_size'),
+    'tau': config.getfloat('DQN', 'tau'),
+    'gamma': config.getfloat('DQN', 'gamma'),
+    'train_freq': config.getint('DQN', 'train_freq'),
+    'gradient_steps': config.getint('DQN', 'gradient_steps'),
+    'target_update_interval': config.getint('DQN', 'target_update_interval'),
+    'exploration_fraction': config.getfloat('DQN', 'exploration_fraction'),
+    'exploration_initial_eps': config.getfloat('DQN', 'exploration_initial_eps'),
+    'exploration_final_eps': config.getfloat('DQN', 'exploration_final_eps'),
+    'max_grad_norm': config.getfloat('DQN', 'max_grad_norm'),
+    'stats_window_size': config.getint('DQN', 'stats_window_size'),
+    #'tensorboard_log': config.get('DQN', 'tensorboard_log'), #TODO: Optional[str]
+}
+log_dir = f"log_{scenario}_{algorithm}_cnn_1"
 print(log_dir)
 
 if not os.path.exists(log_dir):
@@ -61,9 +79,16 @@ env_args = {
 vec_env = DoomEnv.create_vec_env(n_envs, **env_args)
 eval_vec_env = DoomEnv.create_vec_env(1, **env_args)
 
-model = PPO(env=vec_env, verbose=1,
-            **PPO_parameters
-            )
+if algorithm == 'PPO':
+    model = PPO(env=vec_env, verbose=1,
+                **PPO_parameters
+                )
+elif algorithm == 'DQN':
+    model = DQN(env=vec_env, verbose=1,
+                **DQN_parameters
+                )
+else:
+    exit()
 
 eval_callback = EvalCallback(eval_vec_env, best_model_save_path=log_dir,
                              log_path=log_dir, eval_freq=200,

@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-log_dir = "log_basic_PPO_3"
+log_dir = "log_basic_PPO_2"
 
 npzfile = np.load(log_dir + "/evaluations.npz")
 
@@ -22,4 +22,5 @@ plt.fill_between(X, Y_mean - Y_std, Y_mean + Y_std, alpha=0.3, label='Odchylenie
 plt.xlabel("Liczba kroków")
 plt.ylabel("Nagrody")
 plt.legend()
-plt.show()
+# plt.show()
+plt.savefig(log_dir + "/wykres.png")

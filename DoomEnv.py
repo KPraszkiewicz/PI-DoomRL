@@ -54,7 +54,7 @@ class DoomEnv(Env):
         done = self.game.is_episode_finished()
         self.state = self._get_frame(done)
 
-        return self.state, reward / 10, done, done, {}
+        return self.state, reward, done, done, {}
 
     def reset(self, seed=None, options=None) -> t.Tuple[Frame, t.Dict]:
         """Resets the environment.
