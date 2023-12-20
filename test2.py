@@ -1,29 +1,26 @@
-#!/usr/bin/env python3
-
-#####################################################################
-# Example for running a vizdoom scenario as a gym env
-#####################################################################
-
-import gymnasium
-
-from vizdoom import gymnasium_wrapper
-
-from ViZDoom.gymnasium_wrapper.base_gymnasium_env import VizdoomEnv  # noqa
-# from ViZDoom.gym_wrapper.base_gym_env import VizdoomEnv  # noqa
-from stable_baselines3 import PPO
+import cv2
+from stable_baselines3 import DQN, PPO
+import numpy as np
+import DoomEnv
+from utils import load_config
 
 
+env_args = {
+    'scenario': "take_cover",
+    'visible': True,
+    'frame_skip': 1,
+    'frame_processor': lambda frame: cv2.resize(
+        frame, None, fx=.5, fy=.5, interpolation=cv2.INTER_AREA)
+}
 
-if __name__ == "__main__":
-    env = VizdoomEnv("scenarios/basic.cfg", render_mode="rgb_array")
+env = DoomEnv.create_env(**env_args )
 
-    model = PPO("MultiInputPolicy", env, verbose=1)
-    model.learn(total_timesteps=10_000)
 
-    vec_env = model.get_env()
-    obs = vec_env.reset()
-    for i in range(1000):
-        action, _state = model.predict(obs, deterministic=True)
-        obs, reward, done, info = vec_env.step(action)
-        vec_env.render("human")
-
+obs = env.reset()
+for i in range(10000):
+    action = env.action_space.sample()
+    obs, reward, done, _, info = env.step(action)
+    
+    # VecEnv resets automatically
+    # if done:
+    #   obs = vec_env.reset()

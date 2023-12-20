@@ -27,12 +27,11 @@ class DoomEnv(Env):
     def __init__(self,
                  game: vizdoom.DoomGame,
                  frame_processor: t.Callable,
-                 frame_skip: int = 4):
+                 frame_skip: int = 4,
+                 compress_buttons: bool = True):
         super().__init__()
 
-        # Determine action space
-        self.action_space = spaces.Discrete(game.get_available_buttons_size())
-
+    
         # Determine observation space
         h, w, c = game.get_screen_height(), game.get_screen_width(), game.get_screen_channels()
         new_h, new_w, new_c = frame_processor(np.zeros((h, w, c))).shape
@@ -40,8 +39,17 @@ class DoomEnv(Env):
 
         # Assign other variables
         self.game = game
-        # self.possible_actions = np.eye(self.action_space.n).tolist()  # VizDoom needs a list of buttons states.
-        self.possible_actions = get_available_actions(game.get_available_buttons())
+
+        if compress_buttons:
+            self.possible_actions = get_available_actions(game.get_available_buttons())
+            self.action_space = spaces.Discrete(len(self.possible_actions))
+        else:
+            self.action_space = spaces.Discrete(game.get_available_buttons_size())
+            self.possible_actions = np.eye(self.action_space.n).tolist()  # VizDoom needs a list of buttons states.
+        
+        # Determine action space
+        
+
         print(self.possible_actions)
         self.frame_skip = frame_skip
         self.frame_processor = frame_processor
