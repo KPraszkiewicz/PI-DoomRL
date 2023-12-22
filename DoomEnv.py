@@ -28,7 +28,8 @@ class DoomEnv(Env):
                  game: vizdoom.DoomGame,
                  frame_processor: t.Callable,
                  frame_skip: int = 4,
-                 compress_buttons: bool = True):
+                 combinated_buttons: bool = True,
+                 rewards_extension: np.array = None):
         super().__init__()
 
     
@@ -40,15 +41,13 @@ class DoomEnv(Env):
         # Assign other variables
         self.game = game
 
-        if compress_buttons:
+        if combinated_buttons:
             self.possible_actions = get_available_actions(game.get_available_buttons())
             self.action_space = spaces.Discrete(len(self.possible_actions))
         else:
             self.action_space = spaces.Discrete(game.get_available_buttons_size())
             self.possible_actions = np.eye(self.action_space.n).tolist()  # VizDoom needs a list of buttons states.
-        
-        # Determine action space
-        
+       
 
         print(self.possible_actions)
         self.frame_skip = frame_skip
@@ -75,7 +74,9 @@ class DoomEnv(Env):
         done = self.game.is_episode_finished()
         self.state = self._get_frame(done)
 
-        return self.state, reward, done, done, {}
+
+
+        return self.state, reward, self.game.is_player_dead(), done, {}
 
     def reset(self, seed=None, options=None) -> t.Tuple[Frame, t.Dict]:
         """Resets the environment.
@@ -108,7 +109,7 @@ class DoomEnv(Env):
 
 # ENVS
 
-def create_env(scenario: str, visible = False, **kwargs) -> DoomEnv:
+def create_env(scenario: str, visible = False, EnvClass = DoomEnv, **kwargs):
     # Create a VizDoom instance.
     game = vizdoom.DoomGame()
     game.load_config(f'scenarios/{scenario}.cfg')
@@ -116,7 +117,7 @@ def create_env(scenario: str, visible = False, **kwargs) -> DoomEnv:
     game.init()
 
     # Wrap the game with the Gym adapter.
-    return DoomEnv(game, **kwargs)
+    return EnvClass(game, **kwargs)
 
 
 def create_vec_env(n_envs=1, **kwargs) -> vec_env.VecTransposeImage:

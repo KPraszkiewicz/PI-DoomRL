@@ -4,20 +4,25 @@ import DoomEnv
 import shutil
 import os
 import sys
+import numpy as np
 
 from stable_baselines3 import PPO, DQN
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.env_util import make_vec_env
+from DoomHealthGathering import DoomHealthGathering
 
 from utils import load_config
 
 config = load_config("config.ini")
 
+name = config.get('general', 'name')
+version = config.get('general', 'version')
 # parameters
 algorithm = config.get('learning', 'algorithm')
 frame_skip = config.getint('learning', 'frame_skip')
+rewards_extension = config.getboolean('learning', 'rewards_extension')
 scenario = config.get('game', 'scenario')
-compress_buttons = config.getboolean('game', 'compress_buttons')
+combinated_buttons = config.getboolean('game', 'combinated_buttons')
 total_timesteps = config.getint('learning', 'total_timesteps')
 n_envs = config.getint('learning', 'n_envs')
 continue_learning = config.getboolean('learning', 'continue')
@@ -52,7 +57,7 @@ DQN_parameters = {
     'stats_window_size': config.getint('DQN', 'stats_window_size'),
     #'tensorboard_log': config.get('DQN', 'tensorboard_log'), #TODO: Optional[str]
 }
-log_dir = f"log_{scenario}_{algorithm}_test"
+log_dir = f"log_{scenario}_{algorithm}_{name}_{version}"
 print(log_dir)
 
 if not os.path.exists(log_dir):
@@ -69,13 +74,19 @@ else:
 
 shutil.copy("config.ini", log_dir)
 
+rewards = None
+if rewards_extension:
+    rewards = np.array([])
+
 env_args = {
     'scenario': scenario,
     'visible': False,
+    'EnvClass': DoomHealthGathering,
     'frame_skip': frame_skip,
     'frame_processor': lambda frame: cv2.resize(
         frame, None, fx=.5, fy=.5, interpolation=cv2.INTER_AREA),
-    'compress_buttons': compress_buttons
+    'combinated_buttons': combinated_buttons,
+    'rewards_extension': None
 }
 
 vec_env = DoomEnv.create_vec_env(n_envs, **env_args)

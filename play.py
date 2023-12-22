@@ -4,12 +4,12 @@ import numpy as np
 import DoomEnv
 from utils import load_config
 
-log_dir = "log_dtc_6btn_PPO_cnn_test_less_actions"
+log_dir = "log_health_gathering_PPO_test_2"
 config = load_config(log_dir + "/config.ini")
 
 # parameters
 scenario = config.get('game', 'scenario')
-compress_buttons = config.getboolean('game', 'compress_buttons')
+combinated_buttons = config.getboolean('game', 'combinated_buttons')
 
 env_args = {
     'scenario': scenario,
@@ -17,7 +17,7 @@ env_args = {
     'frame_skip': 1,
     'frame_processor': lambda frame: cv2.resize(
         frame, None, fx=.5, fy=.5, interpolation=cv2.INTER_AREA),
-    'compress_buttons': compress_buttons
+    'combinated_buttons': combinated_buttons
 }
 
 env = DoomEnv.create_env(**env_args )
