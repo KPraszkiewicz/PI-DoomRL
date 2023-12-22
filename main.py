@@ -26,6 +26,7 @@ combinated_buttons = config.getboolean('game', 'combinated_buttons')
 total_timesteps = config.getint('learning', 'total_timesteps')
 n_envs = config.getint('learning', 'n_envs')
 continue_learning = config.getboolean('learning', 'continue')
+start_model_dir = config.get('learning', 'start_model')
 
 PPO_parameters = {
     'learning_rate': config.getfloat('PPO', 'learning_rate'),
@@ -92,14 +93,23 @@ env_args = {
 vec_env = DoomEnv.create_vec_env(n_envs, **env_args)
 eval_vec_env = DoomEnv.create_vec_env(1, **env_args)
 
+
 if algorithm == 'PPO':
-    model = PPO(env=vec_env, verbose=1,
-                **PPO_parameters
-                )
+    if start_model_dir != "":
+        if not os.path.exists(start_model_dir):
+            sys.exit(f"katalog {start_model_dir} - nie istnieje")
+        model = PPO.load(start_model_dir + "/best_model.zip", env=vec_env, verbose=0)
+    else:
+        model = PPO(env=vec_env, verbose=0, **PPO_parameters)
+                    
 elif algorithm == 'DQN':
-    model = DQN(env=vec_env, verbose=1,
-                **DQN_parameters
-                )
+    if start_model_dir != "":
+        if not os.path.exists(start_model_dir):
+            sys.exit(f"katalog {start_model_dir} - nie istnieje")
+        model = DQN.load(start_model_dir + "/best_model.zip", env=vec_env, verbose=0)
+    else:
+        model = DQN(env=vec_env, verbose=0, **DQN_parameters)
+
 else:
     exit()
 
