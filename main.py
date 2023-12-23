@@ -11,6 +11,7 @@ from stable_baselines3.common.callbacks import EvalCallback
 from DoomEnv import DoomEnv
 from DoomWithBots import DoomWithBots
 from DoomHealthGathering import DoomHealthGathering
+from DoomWithBotsShaped import DoomWithBotsShaped
 from env_utils import *
 
 from utils import load_config
@@ -23,9 +24,11 @@ version = config.get('general', 'version')
 algorithm = config.get('learning', 'algorithm')
 frame_skip = config.getint('learning', 'frame_skip')
 rewards_shaping = config.getboolean('learning', 'rewards_shaping')
+
 scenario = config.get('game', 'scenario')
 combinated_buttons = config.getboolean('game', 'combinated_buttons')
 n_bots = config.getint('game', 'n_bots')
+
 total_timesteps = config.getint('learning', 'total_timesteps')
 n_envs = config.getint('learning', 'n_envs')
 continue_learning = config.getboolean('learning', 'continue')
@@ -87,9 +90,17 @@ env_args = {
 }
 
 if n_bots > 0:
-    env_args['EnvClass'] = DoomWithBots
+    if rewards_shaping:
+        print("DoomWithBotsShaped")
+        env_args['EnvClass'] = DoomWithBotsShaped
+        env_args['shaping'] = rewards_shaping
+    else:
+        env_args['EnvClass'] = DoomWithBots
     env_args['n_bots'] = n_bots
     venv = vec_env_with_bots(n_envs, **env_args)
+    
+    if rewards_shaping:
+        env_args['shaping'] = False
     eval_vec_env = vec_env_with_bots(1, **env_args)
 else:
     env_args['EnvClass'] = DoomEnv
