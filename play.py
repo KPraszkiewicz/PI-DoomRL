@@ -1,15 +1,18 @@
 import cv2
 from stable_baselines3 import DQN, PPO
 import numpy as np
-import DoomEnv
+from DoomEnv import DoomEnv
+from DoomWithBots import DoomWithBots
+from env_utils import *
 from utils import load_config
 
-log_dir = "log_health_gathering_PPO_test_2"
+log_dir = "log_deathmatch_simple_PPO_test_1"
 config = load_config(log_dir + "/config.ini")
 
 # parameters
 scenario = config.get('game', 'scenario')
 combinated_buttons = config.getboolean('game', 'combinated_buttons')
+n_bots = config.getint('game', 'n_bots')
 
 env_args = {
     'scenario': scenario,
@@ -20,13 +23,20 @@ env_args = {
     'combinated_buttons': combinated_buttons
 }
 
-env = DoomEnv.create_env(**env_args )
+if n_bots > 0:
+    env_args['EnvClass'] = DoomWithBots
+    env_args['n_bots'] = n_bots
+    env = env_with_bots(**env_args)
+else:
+    env_args['EnvClass'] = DoomEnv
+    env = env_with_bots(**env_args)
+
 model = PPO.load(log_dir + "/best_model", env=env)
 
 
 env = model.get_env()
 obs = env.reset()
-for i in range(100):
+for i in range(10000):
     action, _state = model.predict(obs, deterministic=True)
     obs, reward, done, info = env.step(action)
     

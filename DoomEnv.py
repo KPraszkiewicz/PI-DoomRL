@@ -5,7 +5,7 @@ import vizdoom
 import gymnasium as gym
 from gymnasium import Env
 from gymnasium import spaces
-from stable_baselines3.common import vec_env
+
 from vizdoom import Button
 import itertools
 
@@ -28,8 +28,7 @@ class DoomEnv(Env):
                  game: vizdoom.DoomGame,
                  frame_processor: t.Callable,
                  frame_skip: int = 4,
-                 combinated_buttons: bool = True,
-                 rewards_extension: np.array = None):
+                 combinated_buttons: bool = True):
         super().__init__()
 
     
@@ -109,23 +108,7 @@ class DoomEnv(Env):
 
 # ENVS
 
-def create_env(scenario: str, visible = False, EnvClass = DoomEnv, **kwargs):
-    # Create a VizDoom instance.
-    game = vizdoom.DoomGame()
-    game.load_config(f'scenarios/{scenario}.cfg')
-    game.set_window_visible(visible)
-    game.init()
 
-    # Wrap the game with the Gym adapter.
-    return EnvClass(game, **kwargs)
-
-
-def create_vec_env(n_envs=1, **kwargs) -> vec_env.VecTransposeImage:
-    return vec_env.VecTransposeImage(vec_env.DummyVecEnv([lambda: create_env(**kwargs)] * n_envs))
-
-
-def create_eval_vec_env(**kwargs) -> vec_env.VecTransposeImage:
-    return create_vec_env(n_envs=1, **kwargs)
 
 # BUTTONS
 

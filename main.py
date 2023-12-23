@@ -8,8 +8,10 @@ import numpy as np
 
 from stable_baselines3 import PPO, DQN
 from stable_baselines3.common.callbacks import EvalCallback
-from stable_baselines3.common.env_util import make_vec_env
+from DoomEnv import DoomEnv
+from DoomWithBots import DoomWithBots
 from DoomHealthGathering import DoomHealthGathering
+from env_utils import *
 
 from utils import load_config
 
@@ -20,9 +22,10 @@ version = config.get('general', 'version')
 # parameters
 algorithm = config.get('learning', 'algorithm')
 frame_skip = config.getint('learning', 'frame_skip')
-rewards_extension = config.getboolean('learning', 'rewards_extension')
+rewards_shaping = config.getboolean('learning', 'rewards_shaping')
 scenario = config.get('game', 'scenario')
 combinated_buttons = config.getboolean('game', 'combinated_buttons')
+n_bots = config.getint('game', 'n_bots')
 total_timesteps = config.getint('learning', 'total_timesteps')
 n_envs = config.getint('learning', 'n_envs')
 continue_learning = config.getboolean('learning', 'continue')
@@ -58,6 +61,7 @@ DQN_parameters = {
     'stats_window_size': config.getint('DQN', 'stats_window_size'),
     #'tensorboard_log': config.get('DQN', 'tensorboard_log'), #TODO: Optional[str]
 }
+
 log_dir = f"log_{scenario}_{algorithm}_{name}_{version}"
 print(log_dir)
 
@@ -71,50 +75,49 @@ elif continue_learning:
 else:
     sys.exit("Plik istnieje i opcja 'continue' jest wyłączona")
 
-
-
 shutil.copy("config.ini", log_dir)
-
-rewards = None
-if rewards_extension:
-    rewards = np.array([])
 
 env_args = {
     'scenario': scenario,
     'visible': False,
-    'EnvClass': DoomHealthGathering,
     'frame_skip': frame_skip,
     'frame_processor': lambda frame: cv2.resize(
         frame, None, fx=.5, fy=.5, interpolation=cv2.INTER_AREA),
-    'combinated_buttons': combinated_buttons,
-    'rewards_extension': None
+    'combinated_buttons': combinated_buttons
 }
 
-vec_env = DoomEnv.create_vec_env(n_envs, **env_args)
-eval_vec_env = DoomEnv.create_vec_env(1, **env_args)
+if n_bots > 0:
+    env_args['EnvClass'] = DoomWithBots
+    env_args['n_bots'] = n_bots
+    venv = vec_env_with_bots(n_envs, **env_args)
+    eval_vec_env = vec_env_with_bots(1, **env_args)
+else:
+    env_args['EnvClass'] = DoomEnv
+    venv = create_vec_env(n_envs, **env_args)
+    eval_vec_env = create_vec_env(1, **env_args)
 
 
 if algorithm == 'PPO':
     if start_model_dir != "":
         if not os.path.exists(start_model_dir):
             sys.exit(f"katalog {start_model_dir} - nie istnieje")
-        model = PPO.load(start_model_dir + "/best_model.zip", env=vec_env, verbose=0)
+        model = PPO.load(start_model_dir + "/best_model.zip", env=venv, verbose=0)
     else:
-        model = PPO(env=vec_env, verbose=0, **PPO_parameters)
+        model = PPO(env=venv, verbose=0, **PPO_parameters)
                     
 elif algorithm == 'DQN':
     if start_model_dir != "":
         if not os.path.exists(start_model_dir):
             sys.exit(f"katalog {start_model_dir} - nie istnieje")
-        model = DQN.load(start_model_dir + "/best_model.zip", env=vec_env, verbose=0)
+        model = DQN.load(start_model_dir + "/best_model.zip", env=venv, verbose=0)
     else:
-        model = DQN(env=vec_env, verbose=0, **DQN_parameters)
+        model = DQN(env=venv, verbose=0, **DQN_parameters)
 
 else:
     exit()
 
 eval_callback = EvalCallback(eval_vec_env, best_model_save_path=log_dir,
-                             log_path=log_dir, eval_freq=200,
+                             log_path=log_dir, eval_freq=16384,
                              deterministic=True, render=False, n_eval_episodes=10)
 
 model.learn(total_timesteps=total_timesteps, callback=eval_callback, progress_bar=True)
