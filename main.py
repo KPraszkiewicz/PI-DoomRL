@@ -1,5 +1,6 @@
 import cv2
 import gymnasium as gym
+import torch
 import DoomEnv
 import shutil
 import os
@@ -13,7 +14,7 @@ from DoomWithBots import DoomWithBots
 from DoomHealthGathering import DoomHealthGathering
 from DoomWithBotsShaped import DoomWithBotsShaped
 from env_utils import *
-
+from modelCNN import modelCNN
 from utils import load_config
 
 config = load_config("config.ini")
@@ -64,6 +65,14 @@ DQN_parameters = {
     'stats_window_size': config.getint('DQN', 'stats_window_size'),
     #'tensorboard_log': config.get('DQN', 'tensorboard_log'), #TODO: Optional[str]
 }
+
+if(config.getboolean('PPO', 'custom_net')):
+    policy_kwargs = {
+        'activation_fn': torch.nn.ReLU,
+        'net_arch': dict(pi=[128, 64], vf=[64, 32]),
+        'features_extractor_class': modelCNN,
+    }
+    PPO_parameters['policy_kwargs'] = policy_kwargs
 
 log_dir = f"log_{scenario}_{algorithm}_{name}_{version}"
 print(log_dir)
