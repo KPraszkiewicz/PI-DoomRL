@@ -137,7 +137,7 @@ else:
     exit()
 
 eval_callback = EvalCallback(eval_vec_env, best_model_save_path=log_dir,
-                             log_path=log_dir, eval_freq=16384,
+                             log_path=log_dir, eval_freq=PPO_parameters['n_steps'],
                              deterministic=True, render=False, n_eval_episodes=10)
 
 model.learn(total_timesteps=total_timesteps, callback=eval_callback, progress_bar=True)
