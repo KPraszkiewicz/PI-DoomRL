@@ -29,7 +29,7 @@ if n_bots > 0:
     env = env_with_bots(**env_args)
 else:
     env_args['EnvClass'] = DoomEnv
-    env = env_with_bots(**env_args)
+    env = create_env(**env_args)
 
 model = PPO.load(log_dir + "/best_model", env=env)
 
