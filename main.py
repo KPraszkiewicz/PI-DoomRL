@@ -15,6 +15,7 @@ from DoomHealthGathering import DoomHealthGathering
 from DoomWithBotsShaped import DoomWithBotsShaped
 from env_utils import *
 from modelCNN import modelCNN
+from plot import plot
 from utils import load_config
 
 config = load_config("config.ini")
@@ -25,6 +26,7 @@ version = config.get('general', 'version')
 algorithm = config.get('learning', 'algorithm')
 frame_skip = config.getint('learning', 'frame_skip')
 rewards_shaping = config.getboolean('learning', 'rewards_shaping')
+eval_freq = config.getint('learning', 'eval_freq')
 
 scenario = config.get('game', 'scenario')
 combinated_buttons = config.getboolean('game', 'combinated_buttons')
@@ -137,7 +139,9 @@ else:
     exit()
 
 eval_callback = EvalCallback(eval_vec_env, best_model_save_path=log_dir,
-                             log_path=log_dir, eval_freq=PPO_parameters['n_steps'],
+                             log_path=log_dir, eval_freq=eval_freq,
                              deterministic=True, render=False, n_eval_episodes=10)
 
 model.learn(total_timesteps=total_timesteps, callback=eval_callback, progress_bar=True)
+
+plot(log_dir)

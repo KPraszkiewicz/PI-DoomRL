@@ -1,22 +1,23 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-log_dir = "log_PPO_h1"
+def plot(log_dir):
+    npzfile = np.load(log_dir + "/evaluations.npz")
 
-npzfile = np.load(log_dir + "/evaluations.npz")
+    print(npzfile.files)
 
-print(npzfile.files)
+    X = npzfile['timesteps']
+    Y_mean = np.mean(npzfile['results'], axis=1)
+    Y_std = np.std(npzfile['results'], axis=1)
 
-X = npzfile['timesteps']
-Y_mean = np.mean(npzfile['results'],axis=1)
-Y_std = np.std(npzfile['results'],axis=1)
+    fig = plt.figure(log_dir)
+    plt.plot(X, Y_mean, label='Średnia nagroda')
+    plt.fill_between(X, Y_mean - Y_std, Y_mean + Y_std, alpha=0.3, label='Odchylenie standardowe')
+    plt.xlabel("Liczba kroków")
+    plt.ylabel("Nagrody")
+    plt.legend()
+    plt.savefig(log_dir + "/wykres.png")
 
-print(X)
-print(Y_mean)
-
-
-fig = plt.figure(log_dir)
-plt.plot(X, Y_mean)
-plt.xlabel("Number of Timesteps")
-plt.ylabel("Rewards")
-plt.show()
+if __name__ == "__main__":
+    log_dir = "log_health_gathering_supreme_PPO_PICKUP_4"
+    plot(log_dir)
