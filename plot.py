@@ -12,12 +12,15 @@ def plot(log_dir):
 
     fig = plt.figure(log_dir)
     plt.plot(X, Y_mean, label='Średnia nagroda')
-    plt.fill_between(X, Y_mean - Y_std, Y_mean + Y_std, alpha=0.3, label='Odchylenie standardowe')
+    plt.fill_between(X, Y_mean - Y_std, Y_mean + Y_std, alpha=0.3)
     plt.xlabel("Liczba kroków")
     plt.ylabel("Nagrody")
+
+    # plt.ylim((50,120))
+    # plt.plot(X, [90]*len(X), linestyle='dashed' )
     plt.legend()
     plt.savefig(log_dir + "/wykres.png")
 
 if __name__ == "__main__":
-    log_dir = "log_health_gathering_supreme_PPO_PICKUP_4"
+    log_dir = "log_health_gathering_supreme_PPO_PICKUP_1"
     plot(log_dir)

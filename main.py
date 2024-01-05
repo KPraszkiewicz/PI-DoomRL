@@ -1,6 +1,7 @@
 import cv2
 import gymnasium as gym
 import torch
+from DoomDC import DoomDC
 import DoomEnv
 import shutil
 import os
@@ -8,11 +9,12 @@ import sys
 import numpy as np
 
 from stable_baselines3 import PPO, DQN
-from stable_baselines3.common.callbacks import EvalCallback
+from stable_baselines3.common.callbacks import CallbackList, EvalCallback
 from DoomEnv import DoomEnv
 from DoomWithBots import DoomWithBots
 from DoomHealthGathering import DoomHealthGathering
 from DoomWithBotsShaped import DoomWithBotsShaped
+from learningRateCallback import LearningRateCallback
 from env_utils import *
 from modelCNN import modelCNN
 from plot import plot
@@ -47,25 +49,6 @@ PPO_parameters = {
     'gae_lambda': config.getfloat('PPO', 'gae_lambda'),
     'clip_range': config.getfloat('PPO', 'clip_range'),
     'clip_range_vf': None
-}
-
-DQN_parameters = {
-    'learning_rate': config.getfloat('DQN', 'learning_rate'),
-    'policy': config.get('DQN', 'policy'),
-    'buffer_size': config.getint('DQN', 'buffer_size'),
-    'learning_starts': config.getint('DQN', 'learning_starts'),
-    'batch_size': config.getint('DQN', 'batch_size'),
-    'tau': config.getfloat('DQN', 'tau'),
-    'gamma': config.getfloat('DQN', 'gamma'),
-    'train_freq': config.getint('DQN', 'train_freq'),
-    'gradient_steps': config.getint('DQN', 'gradient_steps'),
-    'target_update_interval': config.getint('DQN', 'target_update_interval'),
-    'exploration_fraction': config.getfloat('DQN', 'exploration_fraction'),
-    'exploration_initial_eps': config.getfloat('DQN', 'exploration_initial_eps'),
-    'exploration_final_eps': config.getfloat('DQN', 'exploration_final_eps'),
-    'max_grad_norm': config.getfloat('DQN', 'max_grad_norm'),
-    'stats_window_size': config.getint('DQN', 'stats_window_size'),
-    #'tensorboard_log': config.get('DQN', 'tensorboard_log'), #TODO: Optional[str]
 }
 
 if(config.getboolean('PPO', 'custom_net')):
@@ -114,34 +97,35 @@ if n_bots > 0:
         env_args['shaping'] = False
     eval_vec_env = vec_env_with_bots(1, **env_args)
 else:
-    env_args['EnvClass'] = DoomEnv
+    if rewards_shaping:
+        if scenario == "dc_mod1":
+            env_args['EnvClass'] = DoomDC
+        else:
+            env_args['EnvClass'] = DoomHealthGathering
+    else:
+        env_args['EnvClass'] = DoomEnv
     venv = create_vec_env(n_envs, **env_args)
     eval_vec_env = create_vec_env(1, **env_args)
 
 
-if algorithm == 'PPO':
-    if start_model_dir != "":
-        if not os.path.exists(start_model_dir):
-            sys.exit(f"katalog {start_model_dir} - nie istnieje")
-        model = PPO.load(start_model_dir + "/best_model.zip", env=venv, verbose=0)
-    else:
-        model = PPO(env=venv, verbose=0, **PPO_parameters)
-                    
-elif algorithm == 'DQN':
-    if start_model_dir != "":
-        if not os.path.exists(start_model_dir):
-            sys.exit(f"katalog {start_model_dir} - nie istnieje")
-        model = DQN.load(start_model_dir + "/best_model.zip", env=venv, verbose=0)
-    else:
-        model = DQN(env=venv, verbose=0, **DQN_parameters)
-
+if start_model_dir != "":
+    if not os.path.exists(start_model_dir):
+        sys.exit(f"katalog {start_model_dir} - nie istnieje")
+    model = PPO.load(start_model_dir + "/best_model.zip", env=venv, verbose=0)
 else:
-    exit()
+    model = PPO(env=venv, verbose=0, **PPO_parameters)
 
+# lr_callback = LearningRateCallback()    
 eval_callback = EvalCallback(eval_vec_env, best_model_save_path=log_dir,
                              log_path=log_dir, eval_freq=eval_freq,
+                            #  callback_after_eval=lr_callback,
                              deterministic=True, render=False, n_eval_episodes=10)
 
-model.learn(total_timesteps=total_timesteps, callback=eval_callback, progress_bar=True)
+
+
+
+callbacks = CallbackList([eval_callback])
+
+model.learn(total_timesteps=total_timesteps, callback=callbacks, progress_bar=True)
 
 plot(log_dir)
