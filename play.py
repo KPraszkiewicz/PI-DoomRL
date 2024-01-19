@@ -1,3 +1,4 @@
+import time
 import cv2
 from stable_baselines3 import DQN, PPO
 import numpy as np
@@ -6,8 +7,9 @@ from DoomWithBots import DoomWithBots
 from env_utils import *
 from utils import load_config
 
-log_dir = "log_deathmatch_simple_PPO_test_1"
+log_dir = "log_dc_mod1_PPO_test_1"
 config = load_config(log_dir + "/config.ini")
+record = True
 
 # parameters
 scenario = config.get('game', 'scenario')
@@ -33,13 +35,31 @@ else:
 
 model = PPO.load(log_dir + "/best_model", env=env)
 
+if record:
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    out = cv2.VideoWriter('output.avi', fourcc, 20.0, (320,  240))
 
-env = model.get_env()
-obs = env.reset()
+en = model.get_env()
+obs = en.reset()
 for i in range(10000):
     action, _state = model.predict(obs, deterministic=True)
-    obs, reward, done, info = env.step(action)
+    obs, reward, done, info = en.step(action)
+
+    frame = env.game.get_state().screen_buffer
+    frame = np.transpose( frame, [1, 2, 0])
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     
+    if record:
+        out.write(frame)
+
+    if reward[0] != 0.:
+        print(reward)
+    if done:
+        break
+        obs = en.reset()
+    # time.sleep(0.1)
     # VecEnv resets automatically
     # if done:
     #   obs = vec_env.reset()
+if record:
+    out.release()
